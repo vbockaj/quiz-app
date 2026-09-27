@@ -1,4 +1,4 @@
-# Speed Round
+# Speed Round - https://vbockaj.github.io/quiz-app/
 
 A timed multiple-choice quiz app built with HTML, CSS, and JavaScript - no frameworks, no dependencies. 
 
