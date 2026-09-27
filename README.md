@@ -1,4 +1,4 @@
-# quiz-app
+# Speed Round
 
 A timed multiple-choice quiz app built with HTML, CSS, and JavaScript - no frameworks, no dependencies. 
 
@@ -22,7 +22,7 @@ JavaScript - quiz logic, timer, and DOM rendering (quiz.js)
 
 ## File structure
 
-quiz-app/
+quiz-app
 ├── index.html   # page markup
 ├── style.css    # styling
 ├── quiz.js    # quiz logic
