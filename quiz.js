@@ -1,32 +1,63 @@
-const QUESTIONS = [
+const FALLBACK_QUESTIONS = [
   { q: "Which ocean is the largest by surface area?", opts: ["Atlantic","Indian","Pacific","Arctic"], a: 2 },
-  { q: "In what year did the first email get sent, marking the start of networked messaging?", opts: ["1961","1971","1983","1990"], a: 1 },
   { q: "Which element has the chemical symbol 'Fe'?", opts: ["Fluorine","Iron","Lead","Tin"], a: 1 },
-  { q: "Who composed the opera 'The Magic Flute'?", opts: ["Beethoven","Mozart","Verdi","Handel"], a: 1 },
   { q: "What's the smallest prime number?", opts: ["0","1","2","3"], a: 2 },
-  { q: "Which country has the most time zones?", opts: ["Russia","USA","France","China"], a: 2 },
   { q: "What does CSS stand for?", opts: ["Creative Style Sheets","Cascading Style Sheets","Computed Style System","Colorful Style Sheets"], a: 1 },
-  { q: "Which planet is known for its prominent ring system?", opts: ["Neptune","Mars","Saturn","Mercury"], a: 2 },
-  { q: "Who painted the ceiling of the Sistine Chapel?", opts: ["Raphael","Michelangelo","Donatello","Titian"], a: 1 },
-  { q: "What is the hardest natural substance on Earth?", opts: ["Quartz","Titanium","Diamond","Graphite"], a: 2 },
-  { q: "Which river is the longest in the world?", opts: ["Amazon","Nile","Yangtze","Mississippi"], a: 1 },
-  { q: "In computing, what does 'HTTP' stand for?", opts: ["HyperText Transfer Protocol","High Transfer Text Process","HyperText Transport Process","Host Terminal Transfer Protocol"], a: 0 },
-  { q: "Which gas do plants primarily absorb for photosynthesis?", opts: ["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], a: 2 },
-  { q: "Who wrote the novel '1984'?", opts: ["Aldous Huxley","George Orwell","Ray Bradbury","H.G. Wells"], a: 1 },
-  { q: "What is the currency of Japan?", opts: ["Won","Yuan","Ringgit","Yen"], a: 3 },
-  { q: "Which continent is the Sahara Desert located on?", opts: ["Asia","Africa","Australia","South America"], a: 1 },
-  { q: "How many bones are in the adult human body?", opts: ["186","206","226","246"], a: 1 },
-  { q: "Which programming language is denoted by the file extension '.py'?", opts: ["Perl","PHP","Python","Pascal"], a: 2 },
-  { q: "What is the tallest mountain in the world, measured from sea level?", opts: ["K2","Kangchenjunga","Mount Everest","Denali"], a: 2 },
-  { q: "Which artist is known for the painting 'The Starry Night'?", opts: ["Claude Monet","Vincent van Gogh","Salvador Dalí","Edvard Munch"], a: 1 }
+  { q: "Which planet is known for its prominent ring system?", opts: ["Neptune","Mars","Saturn","Mercury"], a: 2 }
 ];
+
+const API_URL = "https://opentdb.com/api.php?amount=20&type=multiple";
 
 const TIME_PER_Q = 15;
 let i = 0, score = 0, timeLeft = TIME_PER_Q, tickHandle = null, locked = false;
+let QUESTIONS = [];
 const history = [];
 
 const card = document.getElementById('card');
 const progressEl = document.getElementById('progress');
+
+
+function decodeHTML(str){
+  const el = document.createElement('textarea');
+  el.innerHTML = str;
+  return el.value;
+}
+
+function shuffle(arr){
+  for (let j = arr.length - 1; j > 0; j--){
+    const k = Math.floor(Math.random() * (j + 1));
+    [arr[j], arr[k]] = [arr[k], arr[j]];
+  }
+  return arr;
+}
+
+async function loadQuestions(){
+  progressEl.textContent = "";
+  card.innerHTML = `<p class="loading">Fetching questions…</p>`;
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error(`API responded ${res.status}`);
+    const data = await res.json();
+    if (data.response_code !== 0 || !Array.isArray(data.results) || !data.results.length){
+      throw new Error("No questions returned");
+    }
+    QUESTIONS = data.results.map(item => {
+      const correctAnswer = decodeHTML(item.correct_answer);
+      const opts = shuffle([...item.incorrect_answers.map(decodeHTML), correctAnswer]);
+      return {
+        q: decodeHTML(item.question),
+        opts,
+        a: opts.indexOf(correctAnswer)
+      };
+    });
+  } catch (err) {
+    QUESTIONS = FALLBACK_QUESTIONS;
+    card.innerHTML = `<p class="loading">Couldn't reach the quiz API — using a short backup set instead.</p>`;
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  i = 0; score = 0; history.length = 0;
+  render();
+}
 
 function render(){
   progressEl.textContent = `Q${i+1} / ${QUESTIONS.length}`;
@@ -124,10 +155,7 @@ function renderResult(){
       <button class="primary" id="again">RETURN BACK</button>
     </div>
   `;
-  document.getElementById('again').addEventListener('click', ()=>{
-    i = 0; score = 0; history.length = 0;
-    render();
-  });
+  document.getElementById('again').addEventListener('click', loadQuestions);
 }
 
-render();
+loadQuestions();
